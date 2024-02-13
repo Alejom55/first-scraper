@@ -30,13 +30,8 @@ const authenticate = async () => {
   }, 500);
 
   setTimeout(async () => {
-    //const aElements = Document.querySelectorAll("a");
-    //const imageElement = await page.$(`img[alt=" Consultar asignaturas matriculadas"]`);
-    //await page.click(imageElement);
     const links = await page.$$("a");
-
-    // Specify the index of the link you want to click
-    const indexToClick = 16; // Replace with the desired index
+    const indexToClick = 16;
 
     if (indexToClick >= 0 && indexToClick < links.length) {
       await links[indexToClick].click();
@@ -47,13 +42,9 @@ const authenticate = async () => {
   }, 1000);
 
   setTimeout(async () => {
-    //const aElements = Document.querySelectorAll("a");
-    //const imageElement = await page.$(`img[alt=" Consultar asignaturas matriculadas"]`);
-    //await page.click(imageElement);
     const links = await page.$$("a");
 
-    // Specify the index of the link you want to click
-    const indexToClick = 16; // Replace with the desired index
+    const indexToClick = 16;
 
     if (indexToClick >= 0 && indexToClick < links.length) {
       await links[indexToClick].click();
@@ -63,6 +54,21 @@ const authenticate = async () => {
     }
   }, 2000);
 
-
+  setTimeout(async () => {
+    const tableHandle = await page.$('.bordeTabla');
+    if (tableHandle) {
+      const tableHtml = await page.evaluate((table) => {
+        return table ? table.outerHTML : null;
+      }, tableHandle);
+  
+      if (tableHtml) {
+        console.log("Table HTML:", tableHtml);
+      } else {
+        console.log("Table not found.");
+      }
+    } else {
+      console.log("Table handle not found.");
+    }
+  }, 3000);
 };
 authenticate();
