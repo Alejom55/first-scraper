@@ -1,4 +1,5 @@
 const puppeteer = require("puppeteer");
+const cheerio = require('cheerio');
 
 const authenticate = async () => {
   const browser = await puppeteer.launch({
@@ -60,9 +61,35 @@ const authenticate = async () => {
       const tableHtml = await page.evaluate((table) => {
         return table ? table.outerHTML : null;
       }, tableHandle);
-  
+
       if (tableHtml) {
-        console.log("Table HTML:", tableHtml);
+        const $ = cheerio.load(tableHtml);
+
+        // Seleccionar todas las filas (etiqueta 'tr')
+        const filas = $('tr');
+
+        // Objeto para almacenar los datos útiles
+        const datosUtiles = {};
+
+        // Iterar sobre las filas
+        filas.each((index, fila) => {
+          // Obtener todas las celdas de la fila (etiqueta 'td')
+          const celdas = $(fila).find('td');
+
+          // Verificar si la fila contiene datos útiles
+          const contieneDatos = celdas.toArray().some(celda => $(celda).text().trim() !== '');
+
+          if (contieneDatos) {
+            // Si alguna celda contiene texto, consideramos la fila como útil
+            const datosFila = celdas.map((index, celda) => $(celda).text().trim()).get();
+            const idMateria = datosFila[0]; // Supongamos que el ID de la materia está en la primera celda
+            datosUtiles[idMateria] = datosFila;
+          }
+        });
+
+        // Imprimir los datos útiles como JSON
+        console.log(JSON.stringify(datosUtiles));
+        // console.log("Table HTML:", tableHtml);
       } else {
         console.log("Table not found.");
       }
@@ -70,5 +97,8 @@ const authenticate = async () => {
       console.log("Table handle not found.");
     }
   }, 3000);
+
+
+
 };
 authenticate();
