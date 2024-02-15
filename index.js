@@ -67,28 +67,51 @@ const authenticate = async () => {
 
         // Seleccionar todas las filas (etiqueta 'tr')
         const filas = $('tr');
-
+        
         // Objeto para almacenar los datos útiles
         const datosUtiles = {};
-
+        
         // Iterar sobre las filas
         filas.each((index, fila) => {
           // Obtener todas las celdas de la fila (etiqueta 'td')
           const celdas = $(fila).find('td');
-
+        
           // Verificar si la fila contiene datos útiles
           const contieneDatos = celdas.toArray().some(celda => $(celda).text().trim() !== '');
-
+        
           if (contieneDatos) {
             // Si alguna celda contiene texto, consideramos la fila como útil
             const datosFila = celdas.map((index, celda) => $(celda).text().trim()).get();
             const idMateria = datosFila[0]; // Supongamos que el ID de la materia está en la primera celda
-            datosUtiles[idMateria] = datosFila;
+        
+            // Obtener los horarios separados por día
+            const horarios = {
+              Monday: datosFila[4] || "",
+              Tuesday: datosFila[5] || "",
+              Wednesday: datosFila[6] || "",
+              Thursday: datosFila[7] || "",
+              Friday: datosFila[8] || "",
+              Saturday: datosFila[9] || "",
+              Sunday: datosFila[10] || ""
+            };
+        
+            // Verificar si el ID de materia ya existe en datosUtiles
+            if (!datosUtiles[idMateria]) {
+              datosUtiles[idMateria] = {
+                Asignatura: datosFila[1],
+                Grupo: datosFila[2],
+                Modalidad: datosFila[3],
+                Horarios: horarios
+              };
+            } else {
+              // Si ya existe, solo agregar los nuevos horarios
+              Object.assign(datosUtiles[idMateria].Horarios, horarios);
+            }
           }
         });
-
+        
         // Imprimir los datos útiles como JSON
-        console.log(JSON.stringify(datosUtiles));
+        console.log(datosUtiles);
         // console.log("Table HTML:", tableHtml);
       } else {
         console.log("Table not found.");
