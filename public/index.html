@@ -4,39 +4,53 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Schedule</title>
-    <link rel="stylesheet" href="/index.css">
-    <script src="/index.js"></script>
+    <link rel="stylesheet" href="/index.css" />
     <script src="https://cdn.tailwindcss.com"></script>
   </head>
   <body>
     <main
       class="w-full h-full min-h-[100vh] bg-white grid place-content-center"
     >
-      <aside
-        class="h-[clamps(300px,80vw,600px)] h-[350px,60vh,500px]"
-        id="login"
-      >
+      <aside class="h-[clamps(300px,80vw,600px)] h-[350px,60vh,500px]">
+        <form class="w-full h-full p-10 flex flex-col items-center gap-5 rounded-xl" id="login">
+          <article class="relative">
+            <input
+              type="text"
+              name="username"
+              id="username"
+              class="bg-transparent border border-solid border-black-800 rounded-xl outline-none px-3 py-2"
+              required
+            />
+            <label
+              for="username"
+              class="px-1 absolute left-3 top-1/2 -translate-y-1/2 text-white cursor-text transition-all duration-300 ease-in-out"
+            >
+              Usuario
+            </label>
+          </article>
 
-        <form class="w-full h-full p-10 flex flex-col gap-5">
+          <article class="relative">
+            <input
+              type="password"
+              id="password"
+              name="password"
+              class="bg-transparent border border-solid border-black-800 rounded-xl outline-none px-3 py-2"
+              required
+            />
+            <label
+              for="password"
+              class="px-1 absolute left-3 top-1/2 -translate-y-1/2 text-white cursor-text transition-all duration-300 ease-in-out"
+            >
+              Contraseña
+            </label>
+          </article>
 
-        <article class="relative">
-          <input type="text" name="username" id="username" class="bg-transparent border border-solid border-black-800 rounded-xl outline-none px-3 py-2" />
-          <label for="username" class="px-1 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 cursor-text transition-all duration-300 ease-in-out">
-            Usuario
-          </label>
-        </article>
-
-
-        <article class="relative">
-          <input type="password" id="password" name="password" class="bg-transparent border border-solid border-black-800 rounded-xl outline-none px-3 py-2" />
-          <label for="password" class="px-1 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 cursor-text transition-all duration-300 ease-in-out">
-            Contraseña
-          </label>
-        </article>
-
-          <input type="submit" value="Obtener horario" class="bg-white cursor-pointer">
-        </for>
+          <button type="submit" class="bg-white cursor-pointer w-[clamp(100px,70%,200px)] rounded-xl px-2 py-1">
+            Obtener horario
+          </button>
+        </form>
       </aside>
     </main>
+    <script src="/index.js"></script>
   </body>
 </html>

@@ -10,11 +10,9 @@ label {
   background-color: var(--login-color);
 }
 
-
-
-input[type="text"]:is(:active, :focus) + label,
-input[type="password"]:is(:active, :focus) + label {
+input[type="text"]:is(:active, :focus, :valid) + label,
+input[type="password"]:is(:active, :focus, :valid) + label {
   transform: translateY(-2rem);
-  font-size: .9rem;
-  color: white;
+  font-size: 0.9rem;
+  color: rgb(231, 231, 231);
 }

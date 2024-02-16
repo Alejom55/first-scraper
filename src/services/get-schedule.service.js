@@ -1,7 +1,13 @@
 import cheerio from "cheerio";
 import puppeteer from "puppeteer";
 
-const authenticate = async () => {
+const authenticate = async (req, res) => {
+  const { username, password } = req.body;
+  console.log(req.body)
+
+  if (username == undefined || password == undefined)
+    res.status(400).json({ message: "Username and password are required." });
+
   const tiempoInicio = new Date();
 
   const browser = await puppeteer.launch({
@@ -10,8 +16,8 @@ const authenticate = async () => {
   });
 
   const page = await browser.newPage();
-  const username = "1001370617";
-  const password = "1001370617";
+  // const username = "1001370617";
+  // const password = "1001370617";
 
   await page.goto(
     "https://app.udem.edu.co//ConsultasServAcadem/cargarPaginaLogin.do"
@@ -137,6 +143,7 @@ const authenticate = async () => {
       });
 
       console.log(datosUtiles);
+      res.status(200).json(datosUtiles);
     } else {
       console.log("Table not found.");
     }
@@ -151,4 +158,5 @@ const authenticate = async () => {
   console.log(`El tiempo transcurrido es: ${tiempoTranscurrido} milisegundos`);
 };
 
-authenticate();
+// authenticate();
+export default authenticate;
