@@ -1,5 +1,5 @@
 const puppeteer = require("puppeteer");
-const cheerio = require('cheerio');
+const cheerio = require("cheerio");
 
 const authenticate = async () => {
   const browser = await puppeteer.launch({
@@ -56,7 +56,7 @@ const authenticate = async () => {
   }, 2000);
 
   setTimeout(async () => {
-    const tableHandle = await page.$('.bordeTabla');
+    const tableHandle = await page.$(".bordeTabla");
     if (tableHandle) {
       const tableHtml = await page.evaluate((table) => {
         return table ? table.outerHTML : null;
@@ -66,24 +66,28 @@ const authenticate = async () => {
         const $ = cheerio.load(tableHtml);
 
         // Seleccionar todas las filas (etiqueta 'tr')
-        const filas = $('tr');
-        
+        const filas = $("tr");
+
         // Objeto para almacenar los datos útiles
         const datosUtiles = {};
-        
+
         // Iterar sobre las filas
         filas.each((index, fila) => {
           // Obtener todas las celdas de la fila (etiqueta 'td')
-          const celdas = $(fila).find('td');
-        
+          const celdas = $(fila).find("td");
+
           // Verificar si la fila contiene datos útiles
-          const contieneDatos = celdas.toArray().some(celda => $(celda).text().trim() !== '');
-        
+          const contieneDatos = celdas
+            .toArray()
+            .some((celda) => $(celda).text().trim() !== "");
+
           if (contieneDatos) {
             // Si alguna celda contiene texto, consideramos la fila como útil
-            const datosFila = celdas.map((index, celda) => $(celda).text().trim()).get();
+            const datosFila = celdas
+              .map((index, celda) => $(celda).text().trim())
+              .get();
             const idMateria = datosFila[0]; // Supongamos que el ID de la materia está en la primera celda
-        
+
             // Obtener los horarios separados por día
             const horarios = {
               Monday: datosFila[4] || "",
@@ -92,16 +96,16 @@ const authenticate = async () => {
               Thursday: datosFila[7] || "",
               Friday: datosFila[8] || "",
               Saturday: datosFila[9] || "",
-              Sunday: datosFila[10] || ""
+              Sunday: datosFila[10] || "",
             };
-        
+
             // Verificar si el ID de materia ya existe en datosUtiles
             if (!datosUtiles[idMateria]) {
               datosUtiles[idMateria] = {
                 Asignatura: datosFila[1],
                 Grupo: datosFila[2],
                 Modalidad: datosFila[3],
-                Horarios: horarios
+                Horarios: horarios,
               };
             } else {
               // Si ya existe, solo agregar los nuevos horarios
@@ -109,10 +113,61 @@ const authenticate = async () => {
             }
           }
         });
-        
+
         // Imprimir los datos útiles como JSON
-        console.log(datosUtiles);
+        //console.log(datosUtiles);
         // console.log("Table HTML:", tableHtml);
+        function generateTimetableHTML(data) {
+          let html = `
+            <table>
+              <thead>
+                <tr>
+                  <th style="width: 100px">Horario</th>
+                  <th>Lunes</th>
+                  <th>Martes</th>
+                  <th>Miercoles</th>
+                  <th>Jueves</th>
+                  <th>Viernes</th>
+                  <th>Sabado</th>
+                  <th>Domingo</th>
+                </tr>
+              </thead>
+              <tbody>
+          `;
+        
+          for (let hour = 6; hour <= 20; hour += 2) {
+            html += '<tr>';
+            html += `<td>${hour}-${hour + 2}</td>`;
+        
+            for (const day of ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']) {
+              html += '<td>';
+              const courseId = Object.keys(data).find(courseId => data[courseId].Horarios[day].includes(`${hour}-${hour + 2}`));
+        
+              if (courseId) {
+                const course = data[courseId];
+                html += `${course.Asignatura} [${course.Grupo}]`;
+              }
+        
+              html += '</td>';
+            }
+        
+            html += '</tr>';
+          }
+        
+          html += `
+              </tbody>
+            </table>
+          `;
+        
+          return html;
+        }
+              
+        // Example usage
+        const timetableHTML = generateTimetableHTML(datosUtiles);
+        const renderPage = await browser.newPage();
+        
+          // Set the HTML content using setContent
+        await renderPage.setContent(timetableHTML);
       } else {
         console.log("Table not found.");
       }
@@ -120,8 +175,5 @@ const authenticate = async () => {
       console.log("Table handle not found.");
     }
   }, 3000);
-
-
-
 };
 authenticate();
