@@ -1,0 +1,20 @@
+:root {
+  --login-color: #ee4c4c;
+}
+
+#login {
+  background-color: var(--login-color);
+}
+
+label {
+  background-color: var(--login-color);
+}
+
+
+
+input[type="text"]:is(:active, :focus) + label,
+input[type="password"]:is(:active, :focus) + label {
+  transform: translateY(-2rem);
+  font-size: .9rem;
+  color: white;
+}

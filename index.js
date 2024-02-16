@@ -1,5 +1,6 @@
-const puppeteer = require("puppeteer");
-const cheerio = require('cheerio');
+import cheerio from "cheerio";
+import puppeteer from "puppeteer";
+
 const authenticate = async () => {
   const tiempoInicio = new Date();
 
@@ -12,14 +13,18 @@ const authenticate = async () => {
   const username = "1001370617";
   const password = "1001370617";
 
-  await page.goto("https://app.udem.edu.co//ConsultasServAcadem/cargarPaginaLogin.do");
+  await page.goto(
+    "https://app.udem.edu.co//ConsultasServAcadem/cargarPaginaLogin.do"
+  );
 
   await page.waitForSelector('input[name="login"]');
-  await page.waitForSelector('[type=password]');
+  await page.waitForSelector("[type=password]");
   await page.waitForSelector('form[name="loginForm"]');
   await page.type('input[name="login"]', username);
-  await page.type('[type=password]', password);
-  await page.evaluate(() => document.querySelector('form[name="loginForm"]').submit());
+  await page.type("[type=password]", password);
+  await page.evaluate(() =>
+    document.querySelector('form[name="loginForm"]').submit()
+  );
 
   await page.waitForNavigation();
 
@@ -28,13 +33,14 @@ const authenticate = async () => {
   );
 
   const parametrosLinkConsultarAsigMat = await page.evaluate(() => {
-    const link = document.querySelector('a[href^="JavaScript:consultarAsigMat("]');
-    const regex = /consultarAsigMat\(\s*"([^"]+)"\s*,\s*"([^"]+)"\s*,\s*"([^"]+)"\s*,\s*"([^"]+)"\s*,\s*"([^"]+)"\s*,\s*"([^"]+)"\s*,\s*"([^"]+)"\s*,\s*"([^"]+)"\s*,\s*"([^"]+)"\s*,\s*"([^"]+)"\s*,\s*"([^"]+)"\s*\);/;
+    const link = document.querySelector(
+      'a[href^="JavaScript:consultarAsigMat("]'
+    );
+    const regex =
+      /consultarAsigMat\(\s*"([^"]+)"\s*,\s*"([^"]+)"\s*,\s*"([^"]+)"\s*,\s*"([^"]+)"\s*,\s*"([^"]+)"\s*,\s*"([^"]+)"\s*,\s*"([^"]+)"\s*,\s*"([^"]+)"\s*,\s*"([^"]+)"\s*,\s*"([^"]+)"\s*,\s*"([^"]+)"\s*\);/;
     const [, ...params] = link.href.match(regex);
     return params;
   });
-
-
 
   await page.evaluate((params) => {
     const carnet = params[0];
@@ -48,26 +54,40 @@ const authenticate = async () => {
     const nivelEstud = params[8];
     const tipoProg = params[9];
     const pensum = params[10];
-    consultarAsigMat(carnet, periodo, nombre, programa, nombreProg, fechaIni, fechaFin, estadoAcad, nivelEstud, tipoProg, pensum);
+    consultarAsigMat(
+      carnet,
+      periodo,
+      nombre,
+      programa,
+      nombreProg,
+      fechaIni,
+      fechaFin,
+      estadoAcad,
+      nivelEstud,
+      tipoProg,
+      pensum
+    );
   }, parametrosLinkConsultarAsigMat);
 
   await page.waitForNavigation();
 
   const parametrosLinkConsultarHorPre = await page.evaluate(() => {
-    const link = document.querySelector('a[href^="JavaScript:consultarHorPre("]');
+    const link = document.querySelector(
+      'a[href^="JavaScript:consultarHorPre("]'
+    );
     const regex = /consultarHorPre\(\s*'([^']+)',\s*'([^']+)'\s*\);/;
     const [, ...params] = link.href.match(regex);
     return params;
   });
   await page.evaluate((params) => {
-    const carnet = params[0]
-    const periodoCon = params[1]
-    consultarHorPre(carnet, periodoCon)
-  }, parametrosLinkConsultarHorPre)
+    const carnet = params[0];
+    const periodoCon = params[1];
+    consultarHorPre(carnet, periodoCon);
+  }, parametrosLinkConsultarHorPre);
 
   await page.waitForNavigation();
 
-  const tableHandle = await page.$('.bordeTabla');
+  const tableHandle = await page.$(".bordeTabla");
   if (tableHandle) {
     const tableHtml = await page.evaluate((table) => {
       return table ? table.outerHTML : null;
@@ -76,17 +96,21 @@ const authenticate = async () => {
     if (tableHtml) {
       const $ = cheerio.load(tableHtml);
 
-      const filas = $('tr');
+      const filas = $("tr");
 
       const datosUtiles = {};
 
       filas.each((index, fila) => {
-        const celdas = $(fila).find('td');
+        const celdas = $(fila).find("td");
 
-        const contieneDatos = celdas.toArray().some(celda => $(celda).text().trim() !== '');
+        const contieneDatos = celdas
+          .toArray()
+          .some((celda) => $(celda).text().trim() !== "");
 
         if (contieneDatos) {
-          const datosFila = celdas.map((index, celda) => $(celda).text().trim()).get();
+          const datosFila = celdas
+            .map((index, celda) => $(celda).text().trim())
+            .get();
           const idMateria = datosFila[0];
 
           const horarios = {
@@ -96,7 +120,7 @@ const authenticate = async () => {
             Thursday: datosFila[7] || "",
             Friday: datosFila[8] || "",
             Saturday: datosFila[9] || "",
-            Sunday: datosFila[10] || ""
+            Sunday: datosFila[10] || "",
           };
 
           if (!datosUtiles[idMateria]) {
@@ -104,7 +128,7 @@ const authenticate = async () => {
               Asignatura: datosFila[1],
               Grupo: datosFila[2],
               Modalidad: datosFila[3],
-              Horarios: horarios
+              Horarios: horarios,
             };
           } else {
             Object.assign(datosUtiles[idMateria].Horarios, horarios);
@@ -119,7 +143,6 @@ const authenticate = async () => {
   } else {
     console.log("Table handle not found.");
   }
-
 
   await browser.close();
   const tiempoFin = new Date();
