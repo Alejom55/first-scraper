@@ -1,7 +1,8 @@
 const puppeteer = require("puppeteer");
-const cheerio = require("cheerio");
-
+const cheerio = require('cheerio');
 const authenticate = async () => {
+  const tiempoInicio = new Date();
+
   const browser = await puppeteer.launch({
     headless: false,
     args: ["--no-sandbox", "--disable-gpu", "--disable-setuid-sandbox"],
@@ -11,169 +12,120 @@ const authenticate = async () => {
   const username = "1001370617";
   const password = "1001370617";
 
+  await page.goto("https://app.udem.edu.co//ConsultasServAcadem/cargarPaginaLogin.do");
+
+  await page.waitForSelector('input[name="login"]');
+  await page.waitForSelector('[type=password]');
+  await page.waitForSelector('form[name="loginForm"]');
+  await page.type('input[name="login"]', username);
+  await page.type('[type=password]', password);
+  await page.evaluate(() => document.querySelector('form[name="loginForm"]').submit());
+
+  await page.waitForNavigation();
+
   await page.goto(
-    "https://app.udem.edu.co//ConsultasServAcadem/cargarPaginaLogin.do"
+    "https://app.udem.edu.co/ConsultasServAcadem/asignaturasMat/cargarPaginaConsultar.do"
   );
 
-  const inputElement = await page.$('input[name="login"]');
-  const keyElement = await page.$("[type=password]");
-  const form = await page.$('form[name="loginForm"]');
+  const parametrosLinkConsultarAsigMat = await page.evaluate(() => {
+    const link = document.querySelector('a[href^="JavaScript:consultarAsigMat("]');
+    const regex = /consultarAsigMat\(\s*"([^"]+)"\s*,\s*"([^"]+)"\s*,\s*"([^"]+)"\s*,\s*"([^"]+)"\s*,\s*"([^"]+)"\s*,\s*"([^"]+)"\s*,\s*"([^"]+)"\s*,\s*"([^"]+)"\s*,\s*"([^"]+)"\s*,\s*"([^"]+)"\s*,\s*"([^"]+)"\s*\);/;
+    const [, ...params] = link.href.match(regex);
+    return params;
+  });
 
-  await inputElement.type(username);
-  await keyElement.type(password);
 
-  await form.evaluate((form) => form.submit());
 
-  setTimeout(() => {
-    page.goto(
-      "https://app.udem.edu.co/ConsultasServAcadem/asignaturasMat/cargarPaginaConsultar.do"
-    );
-  }, 500);
+  await page.evaluate((params) => {
+    const carnet = params[0];
+    const periodo = params[1];
+    const nombre = params[2];
+    const programa = params[3];
+    const nombreProg = params[4];
+    const fechaIni = params[5];
+    const fechaFin = params[6];
+    const estadoAcad = params[7];
+    const nivelEstud = params[8];
+    const tipoProg = params[9];
+    const pensum = params[10];
+    consultarAsigMat(carnet, periodo, nombre, programa, nombreProg, fechaIni, fechaFin, estadoAcad, nivelEstud, tipoProg, pensum);
+  }, parametrosLinkConsultarAsigMat);
 
-  setTimeout(async () => {
-    const links = await page.$$("a");
-    const indexToClick = 16;
+  await page.waitForNavigation();
 
-    if (indexToClick >= 0 && indexToClick < links.length) {
-      await links[indexToClick].click();
-      console.log(`Clicked on link at index ${indexToClick}`);
-    } else {
-      console.log(`Invalid index: ${indexToClick}`);
-    }
-  }, 1000);
+  const parametrosLinkConsultarHorPre = await page.evaluate(() => {
+    const link = document.querySelector('a[href^="JavaScript:consultarHorPre("]');
+    const regex = /consultarHorPre\(\s*'([^']+)',\s*'([^']+)'\s*\);/;
+    const [, ...params] = link.href.match(regex);
+    return params;
+  });
+  await page.evaluate((params) => {
+    const carnet = params[0]
+    const periodoCon = params[1]
+    consultarHorPre(carnet, periodoCon)
+  }, parametrosLinkConsultarHorPre)
 
-  setTimeout(async () => {
-    const links = await page.$$("a");
+  await page.waitForNavigation();
 
-    const indexToClick = 16;
+  const tableHandle = await page.$('.bordeTabla');
+  if (tableHandle) {
+    const tableHtml = await page.evaluate((table) => {
+      return table ? table.outerHTML : null;
+    }, tableHandle);
 
-    if (indexToClick >= 0 && indexToClick < links.length) {
-      await links[indexToClick].click();
-      console.log(`Clicked on link at index ${indexToClick}`);
-    } else {
-      console.log(`Invalid index: ${indexToClick}`);
-    }
-  }, 2000);
+    if (tableHtml) {
+      const $ = cheerio.load(tableHtml);
 
-  setTimeout(async () => {
-    const tableHandle = await page.$(".bordeTabla");
-    if (tableHandle) {
-      const tableHtml = await page.evaluate((table) => {
-        return table ? table.outerHTML : null;
-      }, tableHandle);
+      const filas = $('tr');
 
-      if (tableHtml) {
-        const $ = cheerio.load(tableHtml);
+      const datosUtiles = {};
 
-        // Seleccionar todas las filas (etiqueta 'tr')
-        const filas = $("tr");
+      filas.each((index, fila) => {
+        const celdas = $(fila).find('td');
 
-        // Objeto para almacenar los datos útiles
-        const datosUtiles = {};
+        const contieneDatos = celdas.toArray().some(celda => $(celda).text().trim() !== '');
 
-        // Iterar sobre las filas
-        filas.each((index, fila) => {
-          // Obtener todas las celdas de la fila (etiqueta 'td')
-          const celdas = $(fila).find("td");
+        if (contieneDatos) {
+          const datosFila = celdas.map((index, celda) => $(celda).text().trim()).get();
+          const idMateria = datosFila[0];
 
-          // Verificar si la fila contiene datos útiles
-          const contieneDatos = celdas
-            .toArray()
-            .some((celda) => $(celda).text().trim() !== "");
+          const horarios = {
+            Monday: datosFila[4] || "",
+            Tuesday: datosFila[5] || "",
+            Wednesday: datosFila[6] || "",
+            Thursday: datosFila[7] || "",
+            Friday: datosFila[8] || "",
+            Saturday: datosFila[9] || "",
+            Sunday: datosFila[10] || ""
+          };
 
-          if (contieneDatos) {
-            // Si alguna celda contiene texto, consideramos la fila como útil
-            const datosFila = celdas
-              .map((index, celda) => $(celda).text().trim())
-              .get();
-            const idMateria = datosFila[0]; // Supongamos que el ID de la materia está en la primera celda
-
-            // Obtener los horarios separados por día
-            const horarios = {
-              Monday: datosFila[4] || "",
-              Tuesday: datosFila[5] || "",
-              Wednesday: datosFila[6] || "",
-              Thursday: datosFila[7] || "",
-              Friday: datosFila[8] || "",
-              Saturday: datosFila[9] || "",
-              Sunday: datosFila[10] || "",
+          if (!datosUtiles[idMateria]) {
+            datosUtiles[idMateria] = {
+              Asignatura: datosFila[1],
+              Grupo: datosFila[2],
+              Modalidad: datosFila[3],
+              Horarios: horarios
             };
-
-            // Verificar si el ID de materia ya existe en datosUtiles
-            if (!datosUtiles[idMateria]) {
-              datosUtiles[idMateria] = {
-                Asignatura: datosFila[1],
-                Grupo: datosFila[2],
-                Modalidad: datosFila[3],
-                Horarios: horarios,
-              };
-            } else {
-              // Si ya existe, solo agregar los nuevos horarios
-              Object.assign(datosUtiles[idMateria].Horarios, horarios);
-            }
+          } else {
+            Object.assign(datosUtiles[idMateria].Horarios, horarios);
           }
-        });
-
-        // Imprimir los datos útiles como JSON
-        //console.log(datosUtiles);
-        // console.log("Table HTML:", tableHtml);
-        function generateTimetableHTML(data) {
-          let html = `
-            <table>
-              <thead>
-                <tr>
-                  <th style="width: 100px">Horario</th>
-                  <th>Lunes</th>
-                  <th>Martes</th>
-                  <th>Miercoles</th>
-                  <th>Jueves</th>
-                  <th>Viernes</th>
-                  <th>Sabado</th>
-                  <th>Domingo</th>
-                </tr>
-              </thead>
-              <tbody>
-          `;
-        
-          for (let hour = 6; hour <= 20; hour += 2) {
-            html += '<tr>';
-            html += `<td>${hour}-${hour + 2}</td>`;
-        
-            for (const day of ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']) {
-              html += '<td>';
-              const courseId = Object.keys(data).find(courseId => data[courseId].Horarios[day].includes(`${hour}-${hour + 2}`));
-        
-              if (courseId) {
-                const course = data[courseId];
-                html += `${course.Asignatura} [${course.Grupo}]`;
-              }
-        
-              html += '</td>';
-            }
-        
-            html += '</tr>';
-          }
-        
-          html += `
-              </tbody>
-            </table>
-          `;
-        
-          return html;
         }
-              
-        // Example usage
-        const timetableHTML = generateTimetableHTML(datosUtiles);
-        const renderPage = await browser.newPage();
-        
-          // Set the HTML content using setContent
-        await renderPage.setContent(timetableHTML);
-      } else {
-        console.log("Table not found.");
-      }
+      });
+
+      console.log(datosUtiles);
     } else {
-      console.log("Table handle not found.");
+      console.log("Table not found.");
     }
-  }, 3000);
+  } else {
+    console.log("Table handle not found.");
+  }
+
+
+  await browser.close();
+  const tiempoFin = new Date();
+
+  const tiempoTranscurrido = tiempoFin - tiempoInicio;
+  console.log(`El tiempo transcurrido es: ${tiempoTranscurrido} milisegundos`);
 };
+
 authenticate();
