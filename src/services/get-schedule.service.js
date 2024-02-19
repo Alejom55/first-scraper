@@ -3,7 +3,7 @@ import puppeteer from "puppeteer";
 
 const authenticate = async (req, res) => {
   const { username, password } = req.body;
-  console.log(req.body)
+  console.log(req.body);
 
   if (username == undefined || password == undefined)
     res.status(400).json({ message: "Username and password are required." });
@@ -143,6 +143,71 @@ const authenticate = async (req, res) => {
       });
 
       console.log(datosUtiles);
+      function generateTimetableHTML(data) {
+        let html = `
+          <table>
+            <thead>
+              <tr style="background-color: #D3D3D3; text-align: center;">
+                <th style="width:10%;">Horario</th>
+                <th style="width:18%;">Lunes</th>
+                <th style="width:18%;">Martes</th>
+                <th style="width:18%;">Miércoles</th>
+                <th style="width:18%;">Jueves</th>
+                <th style="width:18%;">Viernes</th>
+              </tr>
+            </thead>
+            <tbody>
+        `;
+
+        for (let hour = 6; hour <= 20; hour += 2) {
+          html += `<tr style="height: 100px; background-color: #F0F8FF; font-size: 16px; text-align: center">`;
+          html += `<td style="font-size: 20px; text-align: center;">${hour}-${hour + 2}</td>`;
+
+          for (const day of [
+            "Monday",
+            "Tuesday",
+            "Wednesday",
+            "Thursday",
+            "Friday",
+          ]) {
+            html += "<td>";
+            const courseId = Object.keys(data).find(
+              (courseId) =>
+                data[courseId].Horarios[day].includes(`${hour}-${hour + 2}`) ||
+                data[courseId].Horarios[day].includes(
+                  `0${hour}-0${hour + 2}`
+                ) ||
+                data[courseId].Horarios[day].includes(`0${hour}-${hour + 2}`)
+            );
+
+            if (courseId) {
+              const course = data[courseId];
+              html += `${course.Asignatura} [${course.Grupo}]`;
+            }
+
+            html += "</td>";
+          }
+
+          html += "</tr>";
+        }
+
+        html += `
+            </tbody>
+          </table>
+        `;
+
+        return html;
+      }
+
+      const timetableHTML = generateTimetableHTML(datosUtiles);
+      const renderPage = await browser.newPage();
+      await renderPage.setViewport({
+        width: 1920, // Set your desired width
+        height: 1200, // Set your desired height
+      });
+
+      await renderPage.setContent(timetableHTML);
+
       res.status(200).json(datosUtiles);
     } else {
       console.log("Table not found.");
@@ -151,7 +216,6 @@ const authenticate = async (req, res) => {
     console.log("Table handle not found.");
   }
 
-  await browser.close();
   const tiempoFin = new Date();
 
   const tiempoTranscurrido = tiempoFin - tiempoInicio;
