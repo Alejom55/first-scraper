@@ -14,14 +14,24 @@ const authenticate = async (req, res) => {
     headless: false,
     args: ["--no-sandbox", "--disable-gpu", "--disable-setuid-sandbox"],
   });
-
   const page = await browser.newPage();
+
+  // await page.setViewport({ width: 0, height: 0 });
   // const username = "1001370617";
   // const password = "1001370617";
 
   await page.goto(
     "https://app.udem.edu.co//ConsultasServAcadem/cargarPaginaLogin.do"
   );
+
+  
+  const viewportSize = await page.evaluate(() => {
+    return {
+      width: window.innerWidth,
+      height: window.innerHeight
+    };
+  });
+  await page.setViewport(viewportSize);
 
   await page.waitForSelector('input[name="login"]');
   await page.waitForSelector("[type=password]");
@@ -147,7 +157,7 @@ const authenticate = async (req, res) => {
         let html = `
           <table>
             <thead>
-              <tr style="background-color: #D3D3D3; text-align: center;">
+              <tr style="background-color: #F0F8FF; text-align: center;">
                 <th style="width:10%;">Horario</th>
                 <th style="width:18%;">Lunes</th>
                 <th style="width:18%;">Martes</th>
@@ -201,12 +211,34 @@ const authenticate = async (req, res) => {
 
       const timetableHTML = generateTimetableHTML(datosUtiles);
       const renderPage = await browser.newPage();
-      await renderPage.setViewport({
-        width: 1920, // Set your desired width
-        height: 1200, // Set your desired height
-      });
+      // await renderPage.setViewport({
+      //   width: 500, // Set your desired width
+      //   height: 500, // Set your desired height
+      // });
 
-      await renderPage.setContent(timetableHTML);
+      const responsiveStyle = `
+  <style>
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    th, td {
+      border: 1px solid black;
+      padding: 8px;
+      text-align: center;
+    }
+
+    @media screen and (max-width: 600px) {
+      th, td {
+        padding: 4px;
+        font-size: 12px;
+      }
+    }
+  </style>
+`;
+      const responsiveHTML = `${responsiveStyle}${timetableHTML}`;
+      await renderPage.setContent(responsiveHTML);
 
       res.status(200).json(datosUtiles);
     } else {
